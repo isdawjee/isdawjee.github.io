@@ -1,6 +1,0 @@
-# GitHub Pages (Jekyll): publish the site only, not the docs or design hand-off
-exclude:
-  - CLAUDE.md
-  - README.md
-  - _handoff
-  - _content
