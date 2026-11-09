@@ -7,25 +7,25 @@
   'use strict';
   var D = window.Dots;
 
-  /* ---------- the hero: 13 steps ----------
-     sets  : point set(s) to draw (several = cycle through them, 2.4 s each)
+  /* ---------- the hero: 13 steps, one shape each ----------
+     set   : the point set to draw
      theme : index into HERO_THEMES
      r     : [centre x as share of width, centre y as share of height, size as share of height]
-     lum   : dot size follows brightness (portraits) · fit: centre each icon on its own box */
+     lum   : dot size follows brightness (portraits) · fit: centre the set on its own box */
   var HERO_STEPS = [
-    { sets: ['signature'], theme: 0, r: [0.66, 0.5, 0.82], kicker: 'Ismail Dawjee · Johannesburg', pre: '', em: 'Hello,', post: ' human.', note: 'that’s my signature, made of dots' },
-    { sets: ['portrait'], theme: 0, r: [0.745, 0.56, 0.9], lum: true, kicker: '01 — Who', pre: 'I make ', em: 'useful', post: ' things and put them on the internet.', note: 'not always the best at it. always making the next one.' },
-    { sets: ['business'], theme: 3, r: [0.72, 0.5, 0.62], kicker: '02 — What I believe', pre: 'The model, the money and the customer are ', em: 'one thing', post: '.', note: 'design from the model to the moment' },
-    { sets: ['pixels'], theme: 0, r: [0.72, 0.5, 0.6], kicker: '2009 — Pixels', pre: 'It started with ', em: 'craft', post: ' in a small studio in Port Elizabeth.', note: 'I kern my lorem ipsum' },
-    { sets: ['journeys'], theme: 0, r: [0.72, 0.5, 0.62], kicker: '2014 — Journeys · IBM', pre: 'I learned to see a customer as a ', em: 'whole day', post: ', not a screen.', note: 'Turkish Airlines, Etihad, Etisalat…' },
-    { sets: ['products'], theme: 0, r: [0.72, 0.5, 0.6], kicker: '2017 — Products · Nedbank', pre: 'A bank account on a ', em: 'USSD menu', post: '. 1.4 million people.', note: '*120*002# — no smartphone needed' },
-    { sets: ['platforms'], theme: 0, r: [0.72, 0.5, 0.64], kicker: '2020 — Platforms & operating models', pre: 'Then the systems around the product: a ', em: 'super-app', post: ' and a group operating model.', note: 'Avo: 500k+ users, 11k merchants' },
-    { sets: ['business'], theme: 0, r: [0.72, 0.5, 0.64], kicker: '2022 — Business models', pre: 'I wrote the strategy. It became ', em: 'a company', post: '.', note: 'Immersion X → Synergi, Decoder' },
-    { sets: ['bulbDraft'], theme: 1, r: [0.72, 0.5, 0.74], kicker: '03 — How I work', pre: '“Here’s my ', em: 'shitty', post: ' first draft.”', note: 'someone has to go first' },
-    { sets: ['bulbLit'], theme: 1, r: [0.72, 0.5, 0.74], kicker: '03 — How I work', pre: 'Then the team gets precise: build, break, fix, ', em: 'test', post: '.', note: 'the red X still gives me a heart attack' },
-    { sets: ['sectors'], theme: 0, r: [0.74, 0.5, 0.86], kicker: '04 — Depth & spread', pre: '49 organisations. 7 sectors. ', em: '15 countries', post: '.', note: 'each little cluster is a client' },
-    { sets: ['family', 'kaaba', 'books', 'ball', 'devices', 'transformer'], fit: true, theme: 4, r: [0.73, 0.5, 0.6], kicker: '05 — Off the clock', pre: 'Husband, father of two. Proudly ', em: 'South African', post: '.', note: 'faith, family, books, Barça and AI' },
-    { sets: ['signature'], theme: 2, r: [0.74, 0.5, 0.78], kicker: '06 — Let’s talk', pre: 'Let’s make something ', em: 'useful', post: '.', note: 'the long version starts below ↓' }
+    { set: 'signature', theme: 0, r: [0.66, 0.5, 0.82], kicker: 'Ismail Dawjee · Johannesburg', pre: '', em: 'Hello,', post: ' human.', note: 'that’s my signature, connecting the dots' },
+    { set: 'portrait', theme: 0, r: [0.745, 0.56, 0.9], lum: true, kicker: '01 — Who', pre: 'I make ', em: 'useful', post: ' things and put them on the internet.', note: 'not always the best at it, but always iterating' },
+    { set: 'business', theme: 3, r: [0.72, 0.5, 0.62], kicker: '02 — What I believe', pre: 'The model, the revenue and the customer are ', em: 'one thing', post: '.', note: 'design from the model to the moment' },
+    { set: 'pixels', theme: 0, r: [0.72, 0.5, 0.6], kicker: '2009 — Pixels', pre: 'It started with ', em: 'craft', post: ' in a small design studio.', note: 'I kern my lorem ipsum' },
+    { set: 'journeys', theme: 0, r: [0.72, 0.5, 0.62], kicker: '2014 — Journeys · IBM', pre: 'I learned to look past the pixels and see the ', em: 'person', post: ' beyond the screen.', note: 'Turkish Airlines, Etihad, Etisalat…' },
+    { set: 'products', theme: 0, r: [0.72, 0.5, 0.6], kicker: '2017 — Products · Nedbank', pre: 'A bank account on USSD, for ', em: 'the masses', post: '.', note: '*120*002# — no smartphone needed' },
+    { set: 'platforms', theme: 0, r: [0.72, 0.5, 0.64], kicker: '2020 — Platforms & operating models', pre: 'Then I designed the ', em: 'systems', post: ' around the product, from beyond banking to operating models.', note: 'Avo: 200k+ users, 5k merchants' },
+    { set: 'business', theme: 0, r: [0.72, 0.5, 0.64], kicker: '2022 — Business models', pre: 'I wrote the strategy. It became ', em: 'a company', post: '.', note: 'Immersion X → Synergi, Decoder' },
+    { set: 'bulbDraft', theme: 1, r: [0.72, 0.5, 0.74], kicker: '03 — How I work', pre: '“Here’s my ', em: 'shitty', post: ' first draft.”', note: 'someone has to go first' },
+    { set: 'bulbLit', theme: 1, r: [0.72, 0.5, 0.74], kicker: '03 — How I work', pre: 'Then we shape it with precision: build, break, fix, ', em: 'test', post: '.', note: 'design at scale has to start somewhere small' },
+    { set: 'sectors', theme: 0, r: [0.74, 0.5, 0.86], kicker: '04 — Depth & spread', pre: '47 organisations. 7 sectors. ', em: '10+ countries', post: '.', note: 'each little cluster is a client' },
+    { set: 'family', fit: true, theme: 4, r: [0.73, 0.5, 0.6], kicker: '05 — Off the clock', pre: 'Husband, father of two. Proudly ', em: 'South African', post: '.', note: 'faith, family, books, Barça and AI' },
+    { set: 'talk', theme: 2, r: [0.72, 0.5, 0.66], kicker: '06 — Let’s talk', pre: 'Let’s make something ', em: 'useful', post: '.', note: 'the long version starts below ↓' }
   ];
   // bg / dot are RGB; ink = caption text; accent = serif word + handwritten note + active dot
   var HERO_THEMES = [
@@ -55,11 +55,16 @@
       dotWrap.insertBefore(b, cap.count);
       return b;
     });
+    var capEl = sec.querySelector('.hero-cap'), swapT = 0, filled = false;
+    if (window.matchMedia('(hover: none)').matches) sec.querySelector('.hint').textContent = 'swipe to play · tap to step · it also plays on its own';
     hero = new D.Hero({
-      section: sec, canvas: stage.querySelector('canvas'), steps: HERO_STEPS, themes: HERO_THEMES,
+      section: sec, canvas: stage.querySelector('canvas'), caption: capEl, steps: HERO_STEPS, themes: HERO_THEMES,
       onStep: function (i) {
         var st = HERO_STEPS[i], th = HERO_THEMES[st.theme];
-        cap.k.textContent = st.kicker; cap.pre.textContent = st.pre; cap.em.textContent = st.em; cap.post.textContent = st.post; cap.note.textContent = st.note;
+        var fill = function () { cap.k.textContent = st.kicker; cap.pre.textContent = st.pre; cap.em.textContent = st.em; cap.post.textContent = st.post; cap.note.textContent = st.note; capEl.classList.remove('swap'); };
+        // the caption fades out, changes, fades back in while the dots travel
+        clearTimeout(swapT);
+        if (D.REDUCE || !filled) { filled = true; fill(); } else { capEl.classList.add('swap'); swapT = setTimeout(fill, 220); }
         cap.count.textContent = pad2(i + 1) + ' / ' + pad2(HERO_STEPS.length);
         stage.style.setProperty('--h-ink', th.ink);
         stage.style.setProperty('--h-accent', th.accent);
@@ -156,6 +161,50 @@
     });
   }
 
+  /* ---------- facts lines break only at the dots: each "a · b · c" item stays on one line ---------- */
+  function keepItemsTogether() {
+    Array.prototype.forEach.call(document.querySelectorAll('.chapter .meta, .card .role, .co .role'), function (el) {
+      if (el.children.length || el.textContent.indexOf(' · ') < 0) return;
+      var parts = el.textContent.split(' · ');
+      el.textContent = '';
+      parts.forEach(function (p, i) {
+        if (i) el.appendChild(document.createTextNode(' · '));
+        var s = document.createElement('span'); s.className = 'nb'; s.textContent = p; el.appendChild(s);
+      });
+    });
+  }
+
+  /* ---------- chapter menu: tablets, phones and any touch screen (the rail needs hover) ---------- */
+  var menuLinks = [];
+  function initMenu() {
+    var btn = document.querySelector('.menu-btn'), menu = document.getElementById('menu'); if (!btn || !menu) return;
+    var behind = document.querySelectorAll('main, footer, .cta, .rail');
+    menuLinks = Array.prototype.slice.call(menu.querySelectorAll('.menu-list a'));
+    var isOpen = function () { return btn.getAttribute('aria-expanded') === 'true'; };
+    function set(open) {
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.setAttribute('aria-label', open ? 'Close chapters' : 'Chapters');
+      document.documentElement.classList.toggle('menu-open', open);
+      Array.prototype.forEach.call(behind, function (el) { el.inert = open; });
+      if (open) {
+        menu.hidden = false;
+        requestAnimationFrame(function () { menu.classList.add('on'); });
+        (menuLinks[Math.max(0, chapter)] || menuLinks[0]).focus({ preventScroll: true });
+      } else {
+        menu.classList.remove('on');
+        setTimeout(function () { if (!isOpen()) menu.hidden = true; }, D.REDUCE ? 0 : 320);
+      }
+    }
+    btn.addEventListener('click', function () { set(!isOpen()); });
+    menuLinks.forEach(function (a, k) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault(); set(false); btn.focus({ preventScroll: true });
+        secs[k].scrollIntoView({ behavior: D.REDUCE ? 'auto' : 'smooth' });
+      });
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && isOpen()) { set(false); btn.focus(); } });
+  }
+
   /* ---------- page chrome: progress bar + chapter rail ---------- */
   var IDS = ['sec-hello', 'sec-belief', 'sec-story', 'sec-work', 'sec-process', 'sec-clients', 'sec-now', 'sec-life', 'sec-contact'];
   var secs, railBtns, bar, chapter = -1;
@@ -172,7 +221,11 @@
     bar.style.transform = 'scaleX(' + Math.min(1, Math.max(0, (window.scrollY || 0) / maxS)) + ')';
     var ch = 0, vc = h * 0.5;
     for (var s = 0; s < secs.length; s++) { if (secs[s].getBoundingClientRect().top <= vc) ch = s; }
-    if (ch !== chapter) { chapter = ch; railBtns.forEach(function (b, k) { b.classList.toggle('on', k === ch); if (k === ch) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); }); }
+    if (ch !== chapter) {
+      chapter = ch;
+      var mark = function (list) { list.forEach(function (b, k) { b.classList.toggle('on', k === ch); if (k === ch) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); }); };
+      mark(railBtns); mark(menuLinks);
+    }
   }
 
   /* ---------- one animation loop for everything ---------- */
@@ -191,6 +244,8 @@
     initClients();
     initLife();
     initChrome();
+    initMenu();
+    keepItemsTogether();
     D.Points.load('data/points.json').catch(function () { /* dots stay as drifting dust if the file is missing */ });
     requestAnimationFrame(frame);
   }

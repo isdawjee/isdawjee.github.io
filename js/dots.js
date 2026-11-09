@@ -18,6 +18,7 @@
   global.addEventListener('pointermove', function (e) { pointer = { x: e.clientX, y: e.clientY }; }, { passive: true });
   global.addEventListener('pointerout', function (e) { if (!e.relatedTarget) pointer = null; }, { passive: true });
   global.addEventListener('pointerup', function (e) { if (e.pointerType === 'touch') pointer = null; }, { passive: true });
+  global.addEventListener('pointercancel', function () { pointer = null; }, { passive: true });
 
   /* ---------- point sets ---------- */
   var Points = { sets: null, meta: null, norms: {}, version: 0 };
@@ -187,79 +188,122 @@
 
   /* =======================================================================
      Hero — the scroll engine
-     · A tall section (steps−1)×60vh + 100vh with a sticky 100vh stage.
-     · Scroll position inside the section picks the step (continuous scrub).
-     · While the visitor sits at the very top and is idle 4.5 s, it plays itself
-       (one step every 3.8 s); the first scroll re-anchors the page to the step on screen.
-     · Click the stage = next step (smooth scroll); dot buttons jump to a step.
-     · Transition: p eases to target at 0.06/frame; shape morph uses
-       e = smoothstep((f − 0.15) / 0.7) and a per-dot stagger ek = clamp(e·1.5 − s·0.5).
+     · A tall section (steps−1)×60vh + 100vh with a sticky 100svh stage.
+     · Scroll picks the step, but the picture never scrubs: when the step changes,
+       every dot travels to the new shape in one timed morph (MORPH ms, smoothstep,
+       per-dot stagger ek = clamp(e·1.5 − s·0.5)), starting from wherever it was
+       heading, so a change of mind mid-morph never jumps.
+     · When scrolling stops between two steps, the page glides to one: a nudge of
+       more than NUDGE of a step in the direction you were going moves on one step.
+     · While the visitor sits at the very top and is idle 4.5 s, it plays itself;
+       each step stays up for its reading time (dwell, 4.8–8 s). The first scroll
+       re-anchors the page to the step on screen.
+     · Click the stage = next step; dot buttons jump to a step.
      · Dots: spring 0.12/frame, wobble ±0.6 px, repel radius √5000 ≈ 71 px, push 9.
-     · Backgrounds and dot colours cross-fade with the morph.
+     · Background and dot colours cross-fade with the morph.
+     · Phones and portrait tablets: shape top-centre, caption below, and the ground
+       colour fades in behind the caption so the dots never fight the text.
      ======================================================================= */
+  var MORPH = 1100, SETTLE_IDLE = 180, NUDGE = 0.12;
+  // Must match the CSS query in site.css: (max-width: 760px), (max-width: 1100px) and (orientation: portrait)
+  function narrowStage(w, h) { return w <= 760 || (w <= 1100 && h >= w); }
+
   function Hero(o) {
-    this.sec = o.section; this.cv = o.canvas; this.steps = o.steps; this.themes = o.themes;
+    this.sec = o.section; this.cv = o.canvas; this.steps = o.steps; this.themes = o.themes; this.cap = o.caption || null;
     this.onStep = o.onStep || function () {};
     var N = this.N = 7000;
     this.xs = new Float32Array(N); this.ys = new Float32Array(N); this.stag = new Float32Array(N);
-    for (var i = 0; i < N; i++) { this.xs[i] = Math.random() * 1440; this.ys[i] = Math.random() * 900; this.stag[i] = Math.random(); }
-    this.cache = {}; this.cacheV = -1;
-    this.p = 0; this.pt = 0; this.lastInput = -1e9; this.lastAuto = performance.now(); this.autoOn = false;
-    this.lastY = global.scrollY || 0; this.cycT0 = performance.now(); this.cycStep = 0; this.step = -1;
+    this.fx = new Float32Array(N); this.fy = new Float32Array(N); this.fr = new Float32Array(N);   // where each dot set off from
+    this.gx = new Float32Array(N); this.gy = new Float32Array(N); this.gr = new Float32Array(N);   // where it is heading now
+    for (var i = 0; i < N; i++) {
+      this.xs[i] = this.fx[i] = this.gx[i] = Math.random() * 1440; this.ys[i] = this.fy[i] = this.gy[i] = Math.random() * 900;
+      this.fr[i] = this.gr[i] = 0.45; this.stag[i] = Math.random();
+    }
+    var th = this.themes[this.steps[0].theme];
+    this.bg = th.bg.slice(); this.dot = th.dot.slice(); this.bgFrom = th.bg.slice(); this.dotFrom = th.dot.slice();
+    this.cache = {}; this.cacheV = -1; this.capR = 0;
+    this.step = 0; this.t0 = performance.now() - MORPH; this.shown = -1;
+    this.lastInput = -1e9; this.lastScroll = -1e9; this.dir = 0; this.lastY = global.scrollY || 0;
+    this.autoOn = false; this.ignoreScroll = false; this.touching = false; this.settle = null;
     this.sec.style.height = ((this.steps.length - 1) * 60 + 100) + 'vh';
-    var self = this;
+    var self = this, cancel = function () { self.settle = null; };
     global.addEventListener('scroll', function () { self.handleScroll(); }, { passive: true });
+    global.addEventListener('wheel', cancel, { passive: true });
+    global.addEventListener('keydown', cancel);
+    global.addEventListener('touchstart', function () { self.touching = true; self.settle = null; }, { passive: true });
+    global.addEventListener('touchend', function () { self.touching = false; }, { passive: true });
+    global.addEventListener('touchcancel', function () { self.touching = false; }, { passive: true });
   }
   Hero.prototype.geom = function () {
     var r = this.sec.getBoundingClientRect();
     return { top: r.top + (global.scrollY || 0), range: Math.max(1, this.sec.offsetHeight - global.innerHeight) };
   };
   Hero.prototype.handleScroll = function () {
-    var y = global.scrollY || 0;
+    var y = global.scrollY || 0, now = performance.now();
     if (this.ignoreScroll) { this.ignoreScroll = false; this.lastY = y; return; }
     if (this.autoOn) {
       // the page was playing itself: jump the scroll position to the step on screen so nothing jumps visually
-      var g = this.geom(), last = this.steps.length - 1, step = Math.round(this.pt);
+      var g = this.geom(), last = this.steps.length - 1;
       this.autoOn = false;
-      var target = g.top + step * g.range / last + (y - this.lastY);
+      var target = g.top + this.step * g.range / last + (y - this.lastY);
       this.lastY = target; this.ignoreScroll = true; global.scrollTo(0, target);
-    } else this.lastY = y;
-    this.lastInput = performance.now();
+    } else {
+      if (y !== this.lastY) this.dir = y > this.lastY ? 1 : -1;
+      this.lastY = y;
+    }
+    this.lastScroll = now;
+    if (!this.settle) this.lastInput = now;
+  };
+  // Start a morph to step k from wherever every dot is heading right now.
+  Hero.prototype.go = function (k, now) {
+    if (k === this.step) return;
+    this.fx.set(this.gx); this.fy.set(this.gy); this.fr.set(this.gr);
+    this.bgFrom = this.bg.slice(); this.dotFrom = this.dot.slice();
+    this.step = k; this.t0 = now;
   };
   Hero.prototype.scrollToStep = function (k) {
-    var g = this.geom(), last = this.steps.length - 1;
-    if (this.autoOn) { this.autoOn = false; this.ignoreScroll = true; global.scrollTo(0, g.top + Math.round(this.pt) * g.range / last); }
-    this.lastInput = performance.now();
+    var g = this.geom(), last = this.steps.length - 1, now = performance.now();
+    if (this.autoOn) { this.autoOn = false; this.ignoreScroll = true; global.scrollTo(0, g.top + this.step * g.range / last); }
+    this.lastInput = now;
+    this.go(k, now);
     var top = g.top + k * g.range / last;
+    this.settle = { k: k, y: top, t: now };
     requestAnimationFrame(function () { global.scrollTo({ top: top, behavior: REDUCE ? 'auto' : 'smooth' }); });
   };
   Hero.prototype.next = function () {
-    var n = Math.round(this.pt) + 1;
+    var n = this.step + 1;
     if (n > this.steps.length - 1) { var el = document.getElementById('sec-belief'); if (el) el.scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth' }); }
     else this.scrollToStep(n);
   };
-  Hero.prototype.norm = function (name) { return Points.norm(name); };
-  Hero.prototype.layouts = function (i, w, h) {
+  // How long a step stays up when the hero plays itself: its reading time.
+  Hero.prototype.dwell = function (i) {
+    var st = this.steps[i], words = [st.pre, st.em, st.post, st.note].join(' ').split(/\s+/).filter(Boolean).length;
+    return Math.max(4800, Math.min(8000, 2000 + words * 280));
+  };
+  // Where a step's shape sits. Wide: beside the caption (st.r = [cx·w, cy·h, size·h]), kept clear of the
+  // right edge and shrunk only when the room right of the caption is tight (landscape tablets).
+  // Phones and portrait tablets: top-centre, the caption underneath.
+  Hero.prototype.frame = function (st, w, h) {
+    if (narrowStage(w, h)) return { size: Math.min(w * 0.88, h * 0.46), cx: w / 2, cy: h * 0.32 };
+    var size = Math.min(st.r[2] * h, (w - (this.capR || w * 0.48)) * 1.05);
+    return { size: size, cx: Math.min(st.r[0] * w, w - size / 2 - 24), cy: st.r[1] * h };
+  };
+  Hero.prototype.layout = function (i, w, h) {
     if (this.cacheV !== Points.version) { this.cache = {}; this.cacheV = Points.version; }
-    var key = i + '|' + w + 'x' + h;
+    var key = i + '|' + w + 'x' + h + '|' + Math.round(this.capR);
     if (this.cache[key]) return this.cache[key];
-    var self = this, st = this.steps[i], light = this.themes[st.theme].dot[0] < 100;
-    var narrow = w < 760;
-    var size = narrow ? Math.min(w * 0.88, h * 0.46) : st.r[2] * h;
-    var cx = narrow ? w / 2 : st.r[0] * w, cy = narrow ? h * 0.32 : st.r[1] * h;
-    var Mmax = 0;
-    st.sets.forEach(function (n) { var raw = Points.sets && Points.sets[n]; if (raw && raw.length / 3 > Mmax) Mmax = raw.length / 3; });
-    var out = st.sets.map(function (n) { return self.build(n, st, light, size, cx, cy, w, h, st.sets.length > 1 ? Mmax * 2 : 0); });
+    var st = this.steps[i], light = this.themes[st.theme].dot[0] < 100, f = this.frame(st, w, h);
+    var out = this.build(st.set, st, light, f.size, f.cx, f.cy, w, h);
     if (Points.sets) this.cache[key] = out;
     return out;
   };
   // Non-"fit" steps place the raw 1000-box set in a size×size square centred at (cx, cy);
-  // "fit" steps (the cycling life icons) centre each icon on its own bounding box.
-  Hero.prototype.build = function (name, st, light, size, cx, cy, w, h, shapeN) {
+  // "fit" steps centre the set on its own bounding box. Leftover dots become dust across the stage.
+  Hero.prototype.build = function (name, st, light, size, cx, cy, w, h) {
     var N = this.N, tx = new Float32Array(N), ty = new Float32Array(N), tr = new Float32Array(N);
     var raw = Points.sets && Points.sets[name], M = raw ? raw.length / 3 : 0;
-    var nm = st.fit ? this.norm(name) : null, lum = !!st.lum;
-    var s = size / 1000, ox = cx - size / 2, oy = cy - size / 2, limit = shapeN || M * 2;
+    var nm = st.fit ? Points.norm(name) : null, lum = !!st.lum;
+    var s = size / 1000, ox = cx - size / 2, oy = cy - size / 2, limit = M * 2;
     for (var k = 0; k < N; k++) {
       if (M && k < limit) {
         var j = k % M, copy = k >= M, v = raw[j * 3 + 2], px, py;
@@ -272,48 +316,67 @@
   };
   Hero.prototype.draw = function (now) {
     var cv = this.cv, w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
-    var steps = this.steps, last = steps.length - 1, T = this.themes;
+    var steps = this.steps, last = steps.length - 1;
     var cr = cv.getBoundingClientRect(), vis = cr.bottom > 0 && cr.top < global.innerHeight;
     var g = this.geom(), y = global.scrollY || 0;
     var sp = Math.max(0, Math.min(1, (y - g.top) / g.range)) * last;
-    var atStart = (y - g.top) < g.range / last * 0.5;
-    if (!this.autoOn) this.pt = sp;
-    if (!REDUCE && vis && atStart && now - this.lastInput > 4500 && now - this.lastAuto > 3800) {
-      var nx = Math.round(this.pt) + 1; this.pt = nx > last ? 0 : nx; this.autoOn = this.pt !== 0; this.lastAuto = now;
+
+    // 1 · which step: a glide in progress, autoplay, or the scroll position (with a little hysteresis)
+    var S = this.step;
+    if (this.settle) {
+      S = this.settle.k;
+      if (Math.abs(y - this.settle.y) < 2 || now - this.settle.t > 1500) this.settle = null;
+    } else if (!this.autoOn && (sp > S + 0.55 || sp < S - 0.55)) S = Math.round(sp);
+    // the visitor stopped between two steps: glide to one
+    var inside = y > g.top + 1 && y < g.top + g.range - 1;
+    if (!REDUCE && !this.autoOn && !this.settle && !this.touching && inside && now - this.lastScroll > SETTLE_IDLE) {
+      var off = sp - S, k = S;
+      if (Math.abs(off) > NUDGE && (off > 0) === (this.dir > 0)) k = S + (off > 0 ? 1 : -1);
+      k = Math.max(0, Math.min(last, k));
+      var ty = g.top + k * g.range / last;
+      if (Math.abs(ty - y) > 1) { S = k; this.settle = { k: k, y: ty, t: now }; global.scrollTo({ top: ty, behavior: 'smooth' }); }
     }
-    this.p += (this.pt - this.p) * (REDUCE ? 1 : 0.06);
-    if (Math.abs(this.pt - this.p) < 0.001) this.p = this.pt;
-    var sNow = Math.round(this.p);
-    if (sNow !== this.cycStep) { this.cycStep = sNow; this.cycT0 = now; }
-    if (sNow !== this.step) { this.step = sNow; this.onStep(sNow); }
+    // 2 · autoplay: only at the very top, after 4.5 s idle, each step held for its reading time
+    var atStart = (y - g.top) < g.range / last * 0.5;
+    if (!REDUCE && vis && atStart && !this.settle && now - this.lastInput > 4500 && now - this.t0 > MORPH + this.dwell(this.step)) {
+      S = this.step + 1 > last ? 0 : this.step + 1; this.autoOn = S !== 0;
+    }
+    if (S !== this.step) this.go(S, now);
+    if (this.step !== this.shown) { this.shown = this.step; this.onStep(this.step); }
     if (!vis) return;
+
+    // 3 · draw
     var dpr = Math.min(2, global.devicePixelRatio || 1);
     if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
     var ctx = cv.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var i0 = Math.floor(this.p), i1 = Math.min(i0 + 1, last), f = this.p - i0;
-    var e = f <= 0.15 ? 0 : f >= 0.85 ? 1 : (function (x) { return x * x * (3 - 2 * x); })((f - 0.15) / 0.7);
-    var A = this.layouts(i0, w, h), B = this.layouts(i1, w, h);
-    var ta = T[steps[i0].theme], tb = T[steps[i1].theme];
-    var mix = function (a, b) { return Math.round(a + (b - a) * e); };
-    ctx.fillStyle = 'rgb(' + mix(ta.bg[0], tb.bg[0]) + ',' + mix(ta.bg[1], tb.bg[1]) + ',' + mix(ta.bg[2], tb.bg[2]) + ')';
+    var capBox = this.cap ? this.cap.getBoundingClientRect() : null;
+    if (capBox) this.capR = capBox.right - cr.left;
+    var B = this.layout(this.step, w, h), to = this.themes[steps[this.step].theme];
+    var u = REDUCE ? 1 : Math.min(1, (now - this.t0) / MORPH), e = u * u * (3 - 2 * u), c;
+    for (c = 0; c < 3; c++) { this.bg[c] = this.bgFrom[c] + (to.bg[c] - this.bgFrom[c]) * e; this.dot[c] = this.dotFrom[c] + (to.dot[c] - this.dotFrom[c]) * e; }
+    var bg = Math.round(this.bg[0]) + ',' + Math.round(this.bg[1]) + ',' + Math.round(this.bg[2]);
+    ctx.fillStyle = 'rgb(' + bg + ')';
     ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = 'rgb(' + mix(ta.dot[0], tb.dot[0]) + ',' + mix(ta.dot[1], tb.dot[1]) + ',' + mix(ta.dot[2], tb.dot[2]) + ')';
+    ctx.fillStyle = 'rgb(' + Math.round(this.dot[0]) + ',' + Math.round(this.dot[1]) + ',' + Math.round(this.dot[2]) + ')';
     var m = pointer ? { x: pointer.x - cr.left, y: pointer.y - cr.top } : null;
-    var t = now / 1000, P = 2400, el = now - this.cycT0, still = REDUCE, la = A.length, lb = B.length;
-    for (var k = 0; k < this.N; k++) {
-      var sk = this.stag[k], ph = Math.max(0, el - sk * 450);
-      var La = la > 1 ? A[(still ? 0 : Math.floor(ph / P)) % la] : A[0];   // cycling steps: 2.4 s per icon, 450 ms stagger
-      var Lb = lb > 1 ? B[(still ? 0 : Math.floor(ph / P)) % lb] : B[0];
-      var ek = Math.max(0, Math.min(1, e * 1.5 - sk * 0.5));
-      var gx = La.tx[k] + (Lb.tx[k] - La.tx[k]) * ek;
-      var gy = La.ty[k] + (Lb.ty[k] - La.ty[k]) * ek;
-      var r = La.tr[k] + (Lb.tr[k] - La.tr[k]) * ek;
+    var t = now / 1000, still = REDUCE, fx = this.fx, fy = this.fy, fr = this.fr;
+    for (k = 0; k < this.N; k++) {
+      var ek = Math.max(0, Math.min(1, e * 1.5 - this.stag[k] * 0.5));
+      var gx = fx[k] + (B.tx[k] - fx[k]) * ek, gy = fy[k] + (B.ty[k] - fy[k]) * ek, r = fr[k] + (B.tr[k] - fr[k]) * ek;
+      this.gx[k] = gx; this.gy[k] = gy; this.gr[k] = r;
       if (!still) { gx += Math.sin(t * 1.3 + k) * 0.6; gy += Math.cos(t * 1.1 + k * 0.7) * 0.6; }
       var x = still ? gx : this.xs[k] + (gx - this.xs[k]) * 0.12, yy = still ? gy : this.ys[k] + (gy - this.ys[k]) * 0.12;
       if (m) { var dx = x - m.x, dy = yy - m.y, d2 = dx * dx + dy * dy; if (d2 < 5000) { var d = Math.sqrt(d2) || 1, fz = (5000 - d2) / 5000 * 9; x += dx / d * fz; yy += dy / d * fz; } }
       this.xs[k] = x; this.ys[k] = yy;
       ctx.fillRect(x - r, yy - r, r * 2, r * 2);
+    }
+    // phones and portrait tablets: let the ground colour fade in behind the caption
+    if (capBox && narrowStage(w, h)) {
+      var top = capBox.top - cr.top, g0 = Math.max(0, top - 64);
+      var grad = ctx.createLinearGradient(0, g0, 0, top + 12);
+      grad.addColorStop(0, 'rgba(' + bg + ',0)'); grad.addColorStop(1, 'rgba(' + bg + ',0.88)');
+      ctx.fillStyle = grad; ctx.fillRect(0, g0, w, h - g0);
     }
   };
 
