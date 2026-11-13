@@ -1,0 +1,105 @@
+/* =========================================================================
+   mono.css — the black-and-white variant.
+   Rule: the page is pure black (#000) and white (#FFF). Colour lives only in the
+   moving dots (acid, ultramarine and coral, mixed) and in small hints in the serif
+   italics and handwriting. Switched on by class="mono" on <html> (index.html); js/site.js
+   reads that class and sets the dot colours. Remove the class to get the colour site back.
+   Everything here is scoped to html.mono except the hero caption anchor below.
+   ========================================================================= */
+
+html.mono {
+  --ink: #000000;
+  --bone: #FFFFFF;
+  --paper: #FFFFFF;
+  --on-dark-body: #D2D2D2;   /* long copy on black   (13.9:1) */
+  --on-dark-meta: #9C9C9C;   /* mono meta on black   (7.6:1) */
+  --on-light-meta: #5E5E5E;  /* mono meta on white   (6.5:1) */
+  --line-dark: #262626;
+  --line-dark-2: #333333;
+}
+
+/* accents become the text colour: the serif italic carries the emphasis on its own */
+html.mono .c-acid, html.mono .c-ultra, html.mono .c-coral { color: inherit; }
+html.mono :focus-visible { outline-color: currentColor; }
+
+/* ---------- chrome ---------- */
+html.mono .bar { mix-blend-mode: difference; }
+html.mono .bar > div { background: #FFFFFF; }
+html.mono .cta { background: #FFFFFF; color: #000000; box-shadow: 0 0 0 1.5px #000000; }
+html.mono .menu .kicker { color: #FFFFFF; }
+html.mono .menu-list a:hover .ml, html.mono .menu-list a:focus-visible .ml, html.mono .menu-list a[aria-current] .ml { color: #FFFFFF; }
+html.mono .menu-list .ml { color: #8A8A8A; }
+html.mono .menu-list a[aria-current]::after { background: #FFFFFF; }
+html.mono .menu-foot .hand { color: #FFFFFF; }
+
+/* ---------- 02 belief: white ---------- */
+html.mono #sec-belief { background: #FFFFFF; color: #000000; }
+html.mono .intro { border-bottom-color: rgba(0,0,0,0.2); }
+html.mono .belief-copy .hand { color: #000000; }
+html.mono .mark { background: #000000; color: #FFFFFF; }
+
+/* ---------- 03 story: black ---------- */
+html.mono .story-arc, html.mono .chapter .note { color: #FFFFFF; }
+html.mono .chapter .year { color: #FFFFFF; }
+
+/* ---------- 04 projects: white, every tile black, the dots carry the category ---------- */
+html.mono #sec-work .lead .hand { color: #000000; }
+html.mono .chip { border-color: rgba(0,0,0,0.25); }
+html.mono .chip[data-filter] { --chip-bg: #000000; --chip-fg: #FFFFFF; }
+html.mono .chip[data-filter] .sw { background: transparent; box-shadow: 0 0 0 1.5px currentColor; }
+html.mono .chip[aria-pressed="true"] .sw { background: currentColor; }
+html.mono .card .tile { background: #000000; }
+
+/* ---------- 05 process: black ---------- */
+html.mono .process-copy h2, html.mono .steps .hand, html.mono .redx, html.mono .bulb .hand { color: #FFFFFF; }
+
+/* ---------- 06 clients: white ---------- */
+html.mono .worked-head .hand, html.mono .select-head .hand { color: inherit; }
+html.mono .logo { border-color: rgba(0,0,0,0.14); }
+html.mono .logo:hover { background: #000000; }
+html.mono .logo:hover img { filter: invert(1); }
+html.mono .legend li { border-top-color: rgba(0,0,0,0.2); }
+html.mono .legend li.on { background: #000000; color: #FFFFFF; }
+html.mono .legend li.on .dot { background: #FFFFFF; box-shadow: 0 0 0 1.5px #FFFFFF; }
+
+/* ---------- 07 now: black ---------- */
+html.mono #sec-now { background: #000000; color: #FFFFFF; }
+html.mono .now-head .hand, html.mono .co-ig .co-link { color: #FFFFFF; }
+html.mono .co-ig { border-color: rgba(255,255,255,0.35); }
+html.mono .prod .pname, html.mono .prod .co-link { color: #000000; }
+html.mono .judge .pill.now { background: #FFFFFF; color: #000000; }
+
+/* ---------- 08 life: white ---------- */
+html.mono #sec-life { background: #FFFFFF; color: #000000; }
+html.mono .life-list li.on { background: rgba(0,0,0,0.06); }
+html.mono .life-copy h2 svg, html.mono .legal .marks svg { filter: grayscale(1) contrast(1.15); }
+
+/* ---------- 09 contact + footer: black ---------- */
+html.mono .contact-copy .h2 .ser { color: #FFFFFF; }
+html.mono .contact-copy > .hand { color: #FFFFFF; }
+html.mono .primary { background: #FFFFFF; color: #000000; }
+html.mono .flink:hover { background: #FFFFFF; color: #000000; }
+
+/* ---------- hints of colour: only in the serif italics and the handwriting ----------
+   On black: serif + handwritten headlines in acid, handwritten notes in coral.
+   On white: both in ultramarine (the only palette colour that reads on white). */
+html.mono #sec-story .ser, html.mono #sec-story .year,
+html.mono #sec-now .ser, html.mono #sec-contact .ser,
+html.mono .process-copy h2 { color: var(--acid); }
+html.mono .story-arc, html.mono .chapter .note,
+html.mono .steps .hand, html.mono .redx, html.mono .bulb .hand,
+html.mono .now-head .hand, html.mono .contact-copy > .hand,
+html.mono .worked-head .hand, html.mono .menu-foot .hand { color: var(--coral); }
+html.mono #sec-belief .ser, html.mono .belief-copy .serif-line em, html.mono .belief-copy .hand,
+html.mono #sec-work .ser, html.mono #sec-work .lead .hand,
+html.mono #sec-clients .h2 .ser, html.mono .select-head .hand, html.mono .clients-side > .hand, html.mono .more .hand,
+html.mono .legend .ct,
+html.mono #sec-life .ser, html.mono .life-copy > .hand,
+html.mono .prod .pname { color: var(--ultra); }
+html.mono .legend li.on .ct { color: #FFFFFF; }
+html.mono .hero-cap .hn { color: var(--h-note, var(--h-accent)); }
+
+/* ---------- hero caption: anchored at the same height on every step, so the eye never hunts ---------- */
+@media (min-width: 1101px), (min-width: 761px) and (orientation: landscape) {
+  .hero-cap { top: max(112px, calc(50% - 150px)); transform: none; }
+}

@@ -7,25 +7,32 @@
   'use strict';
   var D = window.Dots;
 
-  /* ---------- the hero: 13 steps, one shape each ----------
+  /* ---------- the hero: 14 steps, one shape each ----------
      set   : the point set to draw
      theme : index into HERO_THEMES
      r     : [centre x as share of width, centre y as share of height, size as share of height]
-     lum   : dot size follows brightness (portraits) · fit: centre the set on its own box */
+     lum   : dot size follows brightness (portraits) · fit: centre the set on its own box
+     clusters, blob : draw every `clusters` points as one solid disc of radius `blob` (1000-box units):
+                      the 47 clients on the Reach step · rs: dot size × rs (bolder data dots) */
+  /* One voice for all 14 steps:
+       kicker   "Label · detail" (career steps: "Year · Theme · Organisation")
+       headline one sentence, 4–10 words, one serif-italic turn, ends with a full stop
+       note     a lower-case handwritten aside, 4–7 words, no full stop: the proof or the wink */
   var HERO_STEPS = [
-    { set: 'signature', theme: 0, r: [0.66, 0.5, 0.82], kicker: 'Ismail Dawjee · Johannesburg', pre: '', em: 'Hello,', post: ' human.', note: 'that’s my signature, connecting the dots' },
-    { set: 'portrait', theme: 0, r: [0.745, 0.56, 0.9], lum: true, kicker: '01 — Who', pre: 'I make ', em: 'useful', post: ' things and put them on the internet.', note: 'not always the best at it, but always iterating' },
-    { set: 'business', theme: 3, r: [0.72, 0.5, 0.62], kicker: '02 — What I believe', pre: 'The model, the revenue and the customer are ', em: 'one thing', post: '.', note: 'design from the model to the moment' },
-    { set: 'pixels', theme: 0, r: [0.72, 0.5, 0.6], kicker: '2009 — Pixels', pre: 'It started with ', em: 'craft', post: ' in a small design studio.', note: 'I kern my lorem ipsum' },
-    { set: 'journeys', theme: 0, r: [0.72, 0.5, 0.62], kicker: '2014 — Journeys · IBM', pre: 'I learned to look past the pixels and see the ', em: 'person', post: ' beyond the screen.', note: 'Turkish Airlines, Etihad, Etisalat…' },
-    { set: 'products', theme: 0, r: [0.72, 0.5, 0.6], kicker: '2017 — Products · Nedbank', pre: 'A bank account on USSD, for ', em: 'the masses', post: '.', note: '*120*002# — no smartphone needed' },
-    { set: 'platforms', theme: 0, r: [0.72, 0.5, 0.64], kicker: '2020 — Platforms & operating models', pre: 'Then I designed the ', em: 'systems', post: ' around the product, from beyond banking to operating models.', note: 'Avo: 200k+ users, 5k merchants' },
-    { set: 'business', theme: 0, r: [0.72, 0.5, 0.64], kicker: '2022 — Business models', pre: 'I wrote the strategy. It became ', em: 'a company', post: '.', note: 'Immersion X → Synergi, Decoder' },
-    { set: 'bulbDraft', theme: 1, r: [0.72, 0.5, 0.74], kicker: '03 — How I work', pre: '“Here’s my ', em: 'shitty', post: ' first draft.”', note: 'someone has to go first' },
-    { set: 'bulbLit', theme: 1, r: [0.72, 0.5, 0.74], kicker: '03 — How I work', pre: 'Then we shape it with precision: build, break, fix, ', em: 'test', post: '.', note: 'design at scale has to start somewhere small' },
-    { set: 'sectors', theme: 0, r: [0.74, 0.5, 0.86], kicker: '04 — Depth & spread', pre: '47 organisations. 7 sectors. ', em: '10+ countries', post: '.', note: 'each little cluster is a client' },
-    { set: 'family', fit: true, theme: 4, r: [0.73, 0.5, 0.6], kicker: '05 — Off the clock', pre: 'Husband, father of two. Proudly ', em: 'South African', post: '.', note: 'faith, family, books, Barça and AI' },
-    { set: 'talk', theme: 2, r: [0.72, 0.5, 0.66], kicker: '06 — Let’s talk', pre: 'Let’s make something ', em: 'useful', post: '.', note: 'the long version starts below ↓' }
+    { set: 'signature', theme: 0, r: [0.66, 0.5, 0.82], kicker: 'Hello · Johannesburg', pre: '', em: 'Hello,', post: ' human.', note: 'that’s my signature, connecting the dots' },
+    { set: 'portrait', theme: 0, r: [0.745, 0.56, 0.9], lum: true, kicker: 'Who · Ismail Dawjee', pre: 'I make ', em: 'useful', post: ' things and put them on the internet.', note: 'not always the best, always iterating' },
+    { set: 'business', theme: 3, r: [0.72, 0.5, 0.62], kicker: 'Belief · One thing', pre: 'Model, revenue and customer are ', em: 'one thing', post: '.', note: 'design from the model to the moment' },
+    { set: 'pixels', theme: 0, r: [0.72, 0.5, 0.6], kicker: '2009 · Pixels · Design@Bay', pre: 'It started with ', em: 'craft', post: ' in a small studio.', note: 'I kern my lorem ipsum' },
+    { set: 'journeys', theme: 0, r: [0.72, 0.5, 0.62], kicker: '2014 · Journeys · IBM', pre: 'I learned to see the ', em: 'person', post: ' beyond the screen.', note: 'Turkish Airlines, Etihad, Etisalat' },
+    { set: 'products', theme: 0, r: [0.72, 0.5, 0.6], kicker: '2017 · Products · Nedbank', pre: 'A bank account on USSD, for ', em: 'the masses', post: '.', note: '*120*002#, no smartphone needed' },
+    { set: 'platforms', theme: 0, r: [0.72, 0.5, 0.64], kicker: '2020 · Platforms · Nedbank', pre: 'Then I designed the ', em: 'systems', post: ' around the product.', note: 'Avo: 200k+ users, 5k merchants' },
+    { set: 'venn3', theme: 0, r: [0.72, 0.5, 0.64], kicker: '2022 · Value-led · Immersion', pre: 'From a resourcing model to a ', em: 'value-led', post: ' one.', note: 'experience design, engineering, growth' },
+    { set: 'business', theme: 0, r: [0.72, 0.5, 0.64], kicker: '2025 · Products & AI · Immersion X', pre: 'I wrote the strategy. It became ', em: 'a company', post: '.', note: 'Synergi and Synergi Decoder' },
+    { set: 'bulbDraft', theme: 1, r: [0.72, 0.5, 0.74], kicker: 'Process · The draft', pre: '“Here’s my ', em: 'shitty', post: ' first draft.”', note: 'someone has to go first' },
+    { set: 'bulbLit', theme: 1, r: [0.72, 0.5, 0.74], kicker: 'Process · The work', pre: 'Then we build, break, fix and ', em: 'test', post: '.', note: 'big things start somewhere small' },
+    { set: 'sectors', clusters: 26, blob: 17, rs: 1.5, theme: 0, r: [0.74, 0.5, 0.86], kicker: 'Reach · Depth & spread', pre: '47 organisations, 7 sectors, ', em: '10+ countries', post: '.', note: 'each little cluster is a client' },
+    { set: 'family', fit: true, theme: 4, r: [0.73, 0.5, 0.6], kicker: 'Life · Off the clock', pre: 'Husband, father of two, proudly ', em: 'South African', post: '.', note: 'faith, family, books, Barça and AI' },
+    { set: 'talk', theme: 2, r: [0.72, 0.5, 0.66], kicker: 'Talk · LinkedIn', pre: 'Let’s make something ', em: 'useful', post: '.', note: 'the long version starts below ↓' }
   ];
   // bg / dot are RGB; ink = caption text; accent = serif word + handwritten note + active dot
   var HERO_THEMES = [
@@ -35,6 +42,57 @@
     { bg: [61, 75, 255], dot: [204, 255, 51], ink: '#F1F0EA', accent: '#CCFF33' },  // 3 ultramarine
     { bg: [255, 107, 74], dot: [14, 15, 12], ink: '#0E0F0C', accent: '#0E0F0C' }    // 4 coral
   ];
+
+  /* ---------- MONO: the black-and-white look (live) ----------
+     On when <html> has class="mono" (index.html). The page is pure black and white; every dot
+     visual rests in black or white and warms to acid, ultramarine or coral (mixed) while it moves.
+     Hero grounds become black or white. Remove the class to get the colour site back. */
+  var ACID = [204, 255, 51], ULTRA = [61, 75, 255], CORAL = [255, 107, 74], BLACK = [0, 0, 0], WHITE = [255, 255, 255];
+  var HERO_THEMES_MONO = [
+    { bg: BLACK, dot: WHITE, hot: 'mix', ink: '#FFFFFF', accent: '#CCFF33', note: '#FF6B4A' },    // 0 ink   → black
+    { bg: WHITE, dot: BLACK, hot: 'mix', ink: '#000000', accent: '#3D4BFF', note: '#3D4BFF' },   // 1 bone  → white
+    { bg: WHITE, dot: BLACK, hot: 'mix', ink: '#000000', accent: '#3D4BFF', note: '#3D4BFF' },   // 2 acid  → white
+    { bg: WHITE, dot: BLACK, hot: 'mix', ink: '#000000', accent: '#3D4BFF', note: '#3D4BFF' },   // 3 ultra → white
+    { bg: BLACK, dot: WHITE, hot: 'mix', ink: '#FFFFFF', accent: '#CCFF33', note: '#FF6B4A' }    // 4 coral → black
+  ];
+  var HERO_THEMES_COLOUR = HERO_THEMES.map(function (t) { return { bg: t.bg.slice(), dot: t.dot.slice(), hot: null, ink: t.ink, accent: t.accent, note: t.accent }; });
+  // every dot field in mono: [selector, resting dot colour, ground, colours it warms to when it moves: all three]
+  var MONO_DOTS = [
+    ['#sec-belief .dots', '#000000', 'light', 'mix'],
+    ['#sec-story .dots', '#FFFFFF', 'dark', 'mix'],
+    ['.card[data-cat="Products"] .dots', '#FFFFFF', 'dark', 'mix'],
+    ['.card[data-cat="Journeys"] .dots', '#FFFFFF', 'dark', 'mix'],
+    ['.card[data-cat="Systems"] .dots', '#FFFFFF', 'dark', 'mix'],
+    ['.card[data-cat="Ventures"] .dots', '#FFFFFF', 'dark', 'mix'],
+    ['.bulb .dots', '#FFFFFF', 'dark', 'mix'],
+    ['.clients-side .dots', '#000000', 'light', 'mix'],
+    ['.now-head .dots', '#FFFFFF', 'dark', 'mix'],
+    ['.prod .dots', '#000000', 'light', 'mix'],
+    ['#sec-life .dots', '#000000', 'light', 'mix'],
+    ['#sec-contact .dots', '#FFFFFF', 'dark', 'mix']
+  ];
+  var mode = 'colour', applyStep = function () {};
+  function setMode(m) {
+    mode = m === 'mono' ? 'mono' : 'colour';
+    document.documentElement.classList.toggle('mono', mode === 'mono');
+    var src = mode === 'mono' ? HERO_THEMES_MONO : HERO_THEMES_COLOUR;
+    HERO_THEMES.forEach(function (t, k) { t.bg = src[k].bg.slice(); t.dot = src[k].dot.slice(); t.hot = src[k].hot || null; t.ink = src[k].ink; t.accent = src[k].accent; t.note = src[k].note; });
+    MONO_DOTS.forEach(function (row) {
+      Array.prototype.forEach.call(document.querySelectorAll(row[0]), function (el) {
+        if (!el.hasAttribute('data-colour-ink')) { el.setAttribute('data-colour-ink', el.getAttribute('data-ink')); el.setAttribute('data-colour-tone', el.getAttribute('data-tone')); }
+        el.setAttribute('data-ink', mode === 'mono' ? row[1] : el.getAttribute('data-colour-ink'));
+        el.setAttribute('data-tone', mode === 'mono' ? row[2] : el.getAttribute('data-colour-tone'));
+        if (mode === 'mono') el.setAttribute('data-hot', row[3]); else el.removeAttribute('data-hot');
+      });
+    });
+    var hl = document.querySelector('.clients-side .dots');
+    if (hl) hl.setAttribute('data-hl-ink', '#FF6B4A');
+    if (hero) {   // cross-fade the hero's ground and dots in place, without moving a dot
+      hero.fx.set(hero.gx); hero.fy.set(hero.gy); hero.fr.set(hero.gr);
+      hero.bgFrom = hero.bg.slice(); hero.dotFrom = hero.dot.slice(); hero.t0 = performance.now();
+      applyStep();
+    }
+  }
 
   var fields = [];
   var hero = null;
@@ -60,15 +118,20 @@
     hero = new D.Hero({
       section: sec, canvas: stage.querySelector('canvas'), caption: capEl, steps: HERO_STEPS, themes: HERO_THEMES,
       onStep: function (i) {
-        var st = HERO_STEPS[i], th = HERO_THEMES[st.theme];
+        var st = HERO_STEPS[i];
         var fill = function () { cap.k.textContent = st.kicker; cap.pre.textContent = st.pre; cap.em.textContent = st.em; cap.post.textContent = st.post; cap.note.textContent = st.note; capEl.classList.remove('swap'); };
         // the caption fades out, changes, fades back in while the dots travel
         clearTimeout(swapT);
         if (D.REDUCE || !filled) { filled = true; fill(); } else { capEl.classList.add('swap'); swapT = setTimeout(fill, 220); }
         cap.count.textContent = pad2(i + 1) + ' / ' + pad2(HERO_STEPS.length);
-        stage.style.setProperty('--h-ink', th.ink);
-        stage.style.setProperty('--h-accent', th.accent);
-        stage.style.setProperty('--h-soft', th.ink === '#0E0F0C' ? 'rgba(14,15,12,0.3)' : 'rgba(241,240,234,0.35)');
+        applyStep = function () {
+          var t = HERO_THEMES[HERO_STEPS[i].theme], dark = t.ink === '#0E0F0C' || t.ink === '#000000';
+          stage.style.setProperty('--h-ink', t.ink);
+          stage.style.setProperty('--h-accent', t.accent);
+          stage.style.setProperty('--h-note', t.note || t.accent);
+          stage.style.setProperty('--h-soft', dark ? 'rgba(14,15,12,0.3)' : 'rgba(241,240,234,0.35)');
+        };
+        applyStep();
         btns.forEach(function (b, k) { b.classList.toggle('on', k === i); });
       }
     });
@@ -237,6 +300,7 @@
   }
 
   function start() {
+    setMode(document.documentElement.classList.contains('mono') ? 'mono' : 'colour');   // before anything draws: no colour flash
     initHero();
     initFields();
     initWork();

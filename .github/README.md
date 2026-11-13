@@ -16,7 +16,7 @@ that matter most, and these days I dare to build software too.
 ### Now
 
 - **CPTO, Immersion X.** The product company that grew out of my productisation strategy.
-  Its first products are [Synergi](https://getsynergi.ai/) and Decoder, and they're built by me.
+  Its first products are [Synergi](https://getsynergi.ai/) and Synergi Decoder, and they're built by me.
 - **MD, Immersion Group.** Experience consulting and strategy: customer value propositions and experience
   strategy for banks, insurers and consumer brands. [immersion-group.com](https://immersion-group.com)
 - **Judge, FNB App of the Year 2026.** Also FNB App of the Year 2024 and MTN App of the Year 2023.
@@ -37,7 +37,10 @@ and that's where the best experiences, sustainable businesses and real impact ge
   smartphones, a digital Stokvel, and account opening entirely in the app.
 - **2020 · Platforms & operating models.** Nedbank: my business design team and I led the journey-based
   redesign of Avo, and I shaped the customer-centricity strategy for the Group's Target Operating Model.
-- **2022 · Business models.** Immersion Group, then Immersion X: I wrote the strategy, and it became a company.
+- **2022 · Value-led.** Immersion Group: from a resourcing model to a value-led, strategic one, which brought new
+  propositions in experience design, experience engineering and experience growth.
+- **2025 · Business models.** Productisation and AI acceleration: I wrote the strategy, and it became a company,
+  Immersion X.
 
 47 organisations, 7 sectors, 10+ countries. From Eastern Cape universities to Gulf ministries, airlines, telcos,
 banks and insurers.
