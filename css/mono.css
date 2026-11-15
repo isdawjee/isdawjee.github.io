@@ -77,7 +77,7 @@ html.mono .life-copy h2 svg, html.mono .legal .marks svg { filter: grayscale(1) 
 /* ---------- 09 contact + footer: black ---------- */
 html.mono .contact-copy .h2 .ser { color: #FFFFFF; }
 html.mono .contact-copy > .hand { color: #FFFFFF; }
-html.mono .primary { background: #FFFFFF; color: #000000; }
+html.mono .primary, html.mono .consent-ok { background: #FFFFFF; color: #000000; }
 html.mono .flink:hover { background: #FFFFFF; color: #000000; }
 
 /* ---------- hints of colour: only in the serif italics and the handwriting ----------
